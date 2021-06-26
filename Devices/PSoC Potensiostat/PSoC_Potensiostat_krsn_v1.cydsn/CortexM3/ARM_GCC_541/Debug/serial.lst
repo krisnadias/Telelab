@@ -1,0 +1,1693 @@
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 1
+
+
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.syntax unified
+  15              		.file	"serial.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.section	.text.serial_parseCommand,"ax",%progbits
+  20              		.align	2
+  21              		.global	serial_parseCommand
+  22              		.thumb
+  23              		.thumb_func
+  24              		.type	serial_parseCommand, %function
+  25              	serial_parseCommand:
+  26              	.LFB65:
+  27              		.file 1 "serial.c"
+   1:serial.c      **** /* ========================================
+   2:serial.c      ****  * Code for parsing strings from UART into commands
+   3:serial.c      ****  * ========================================
+   4:serial.c      **** */
+   5:serial.c      **** 
+   6:serial.c      **** #include "serial.h"
+   7:serial.c      **** 
+   8:serial.c      **** 
+   9:serial.c      **** /*Line for each command, needs to be in the same order as enum eCommand in serial.h!*/
+  10:serial.c      **** const char* cmd_str []= {
+  11:serial.c      ****   "", "S", "I", "CV","LSV","CA","CALI","RG",
+  12:serial.c      **** };
+  13:serial.c      **** 
+  14:serial.c      **** int cmd=NONE;
+  15:serial.c      **** int cmd_last=NONE;
+  16:serial.c      **** int cmd_params[PARAM_MAX];
+  17:serial.c      **** int cmd_nparam=0;
+  18:serial.c      **** int cmd_error = 0;
+  19:serial.c      **** 
+  20:serial.c      **** const char cmd_end =  '\r';
+  21:serial.c      **** const char cmd_separators[] = " ,;=";
+  22:serial.c      **** 
+  23:serial.c      **** 
+  24:serial.c      **** /* ========================================
+  25:serial.c      ****  * Operation: serial_parseLine
+  26:serial.c      ****  * Description: Parse a string into the command and parameter variables
+  27:serial.c      ****  * Input: char *s_cmd - char array of serial input like "CV 100 200"
+  28:serial.c      ****  * Output: 
+  29:serial.c      ****  *    return true/false - false if operation error
+  30:serial.c      ****  *    int cmd - number that points what command is called according to cmd_str
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 2
+
+
+  31:serial.c      ****  *    int cmd_params[] - array of value from the command 
+  32:serial.c      ****  * ========================================
+  33:serial.c      **** */
+  34:serial.c      **** uint8_t serial_parseLine(char *s_cmd) {
+  35:serial.c      ****     memset(cmd_params, 0, PARAM_MAX);
+  36:serial.c      ****     char* token;
+  37:serial.c      ****     token = strtok(s_cmd,cmd_separators);
+  38:serial.c      ****     
+  39:serial.c      ****     if (token == NULL) {
+  40:serial.c      ****         cmd_error = 1;
+  41:serial.c      ****         return 0; //false
+  42:serial.c      ****     }
+  43:serial.c      ****     if (!serial_parseCommand(token)) {
+  44:serial.c      ****         cmd_error = 2;
+  45:serial.c      ****         return 0; //false    
+  46:serial.c      ****     }
+  47:serial.c      ****     for (int i=0; i<PARAM_MAX; i++) {
+  48:serial.c      ****         token = strtok(NULL,cmd_separators);
+  49:serial.c      ****         if (token == NULL) break;
+  50:serial.c      ****         cmd_params[i] = atol(token); 
+  51:serial.c      ****     }
+  52:serial.c      ****     cmd_error = 0;
+  53:serial.c      ****     return 1; //true
+  54:serial.c      **** }
+  55:serial.c      **** /* function to compare the input char* with the list of valid commands in cmd_str */
+  56:serial.c      **** int serial_parseCommand(char *line) {
+  28              		.loc 1 56 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  33 0000 38B5     		push	{r3, r4, r5, lr}
+  34              		.cfi_def_cfa_offset 16
+  35              		.cfi_offset 3, -16
+  36              		.cfi_offset 4, -12
+  37              		.cfi_offset 5, -8
+  38              		.cfi_offset 14, -4
+  39 0002 0546     		mov	r5, r0
+  40              	.LVL1:
+  41              	.LBB2:
+  57:serial.c      ****     for (int i=0; i<CMD_MAX; i++) {
+  42              		.loc 1 57 0
+  43 0004 0024     		movs	r4, #0
+  44 0006 0BE0     		b	.L2
+  45              	.LVL2:
+  46              	.L5:
+  58:serial.c      ****         if (strcmp(line, cmd_str[i]) == 0) {
+  47              		.loc 1 58 0
+  48 0008 074B     		ldr	r3, .L7
+  49 000a 53F82410 		ldr	r1, [r3, r4, lsl #2]
+  50 000e 2846     		mov	r0, r5
+  51 0010 FFF7FEFF 		bl	strcmp
+  52              	.LVL3:
+  53 0014 18B9     		cbnz	r0, .L3
+  59:serial.c      ****             cmd = i;
+  54              		.loc 1 59 0
+  55 0016 054B     		ldr	r3, .L7+4
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 3
+
+
+  56 0018 1C60     		str	r4, [r3]
+  60:serial.c      ****             return 1; //true
+  57              		.loc 1 60 0
+  58 001a 0120     		movs	r0, #1
+  59 001c 38BD     		pop	{r3, r4, r5, pc}
+  60              	.LVL4:
+  61              	.L3:
+  57:serial.c      ****         if (strcmp(line, cmd_str[i]) == 0) {
+  62              		.loc 1 57 0 discriminator 2
+  63 001e 0134     		adds	r4, r4, #1
+  64              	.LVL5:
+  65              	.L2:
+  57:serial.c      ****         if (strcmp(line, cmd_str[i]) == 0) {
+  66              		.loc 1 57 0 is_stmt 0 discriminator 1
+  67 0020 072C     		cmp	r4, #7
+  68 0022 F1DD     		ble	.L5
+  69              	.LBE2:
+  61:serial.c      ****         }
+  62:serial.c      ****     }
+  63:serial.c      ****     return 0; //false  
+  70              		.loc 1 63 0 is_stmt 1
+  71 0024 0020     		movs	r0, #0
+  64:serial.c      **** }
+  72              		.loc 1 64 0
+  73 0026 38BD     		pop	{r3, r4, r5, pc}
+  74              	.LVL6:
+  75              	.L8:
+  76              		.align	2
+  77              	.L7:
+  78 0028 00000000 		.word	.LANCHOR0
+  79 002c 00000000 		.word	.LANCHOR1
+  80              		.cfi_endproc
+  81              	.LFE65:
+  82              		.size	serial_parseCommand, .-serial_parseCommand
+  83              		.section	.text.serial_parseLine,"ax",%progbits
+  84              		.align	2
+  85              		.global	serial_parseLine
+  86              		.thumb
+  87              		.thumb_func
+  88              		.type	serial_parseLine, %function
+  89              	serial_parseLine:
+  90              	.LFB64:
+  34:serial.c      ****     memset(cmd_params, 0, PARAM_MAX);
+  91              		.loc 1 34 0
+  92              		.cfi_startproc
+  93              		@ args = 0, pretend = 0, frame = 0
+  94              		@ frame_needed = 0, uses_anonymous_args = 0
+  95              	.LVL7:
+  96 0000 10B5     		push	{r4, lr}
+  97              		.cfi_def_cfa_offset 8
+  98              		.cfi_offset 4, -8
+  99              		.cfi_offset 14, -4
+  35:serial.c      ****     char* token;
+ 100              		.loc 1 35 0
+ 101 0002 134B     		ldr	r3, .L17
+ 102 0004 0022     		movs	r2, #0
+ 103 0006 1A60     		str	r2, [r3]
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 4
+
+
+ 104 0008 1A71     		strb	r2, [r3, #4]
+  37:serial.c      ****     
+ 105              		.loc 1 37 0
+ 106 000a 1249     		ldr	r1, .L17+4
+ 107 000c FFF7FEFF 		bl	strtok
+ 108              	.LVL8:
+  39:serial.c      ****         cmd_error = 1;
+ 109              		.loc 1 39 0
+ 110 0010 18B9     		cbnz	r0, .L10
+  40:serial.c      ****         return 0; //false
+ 111              		.loc 1 40 0
+ 112 0012 0122     		movs	r2, #1
+ 113 0014 104B     		ldr	r3, .L17+8
+ 114 0016 5A60     		str	r2, [r3, #4]
+  41:serial.c      ****     }
+ 115              		.loc 1 41 0
+ 116 0018 10BD     		pop	{r4, pc}
+ 117              	.L10:
+  43:serial.c      ****         cmd_error = 2;
+ 118              		.loc 1 43 0
+ 119 001a FFF7FEFF 		bl	serial_parseCommand
+ 120              	.LVL9:
+ 121 001e 78B9     		cbnz	r0, .L15
+  44:serial.c      ****         return 0; //false    
+ 122              		.loc 1 44 0
+ 123 0020 0222     		movs	r2, #2
+ 124 0022 0D4B     		ldr	r3, .L17+8
+ 125 0024 5A60     		str	r2, [r3, #4]
+  45:serial.c      ****     }
+ 126              		.loc 1 45 0
+ 127 0026 10BD     		pop	{r4, pc}
+ 128              	.LVL10:
+ 129              	.L14:
+ 130              	.LBB3:
+  48:serial.c      ****         if (token == NULL) break;
+ 131              		.loc 1 48 0
+ 132 0028 0A49     		ldr	r1, .L17+4
+ 133 002a 0020     		movs	r0, #0
+ 134 002c FFF7FEFF 		bl	strtok
+ 135              	.LVL11:
+  49:serial.c      ****         cmd_params[i] = atol(token); 
+ 136              		.loc 1 49 0
+ 137 0030 48B1     		cbz	r0, .L13
+  50:serial.c      ****     }
+ 138              		.loc 1 50 0 discriminator 2
+ 139 0032 FFF7FEFF 		bl	atol
+ 140              	.LVL12:
+ 141 0036 064B     		ldr	r3, .L17
+ 142 0038 43F82400 		str	r0, [r3, r4, lsl #2]
+  47:serial.c      ****         token = strtok(NULL,cmd_separators);
+ 143              		.loc 1 47 0 discriminator 2
+ 144 003c 0134     		adds	r4, r4, #1
+ 145              	.LVL13:
+ 146 003e 00E0     		b	.L12
+ 147              	.LVL14:
+ 148              	.L15:
+ 149              	.LBE3:
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 5
+
+
+ 150 0040 0024     		movs	r4, #0
+ 151              	.L12:
+ 152              	.LVL15:
+ 153              	.LBB4:
+  47:serial.c      ****         token = strtok(NULL,cmd_separators);
+ 154              		.loc 1 47 0 is_stmt 0 discriminator 1
+ 155 0042 042C     		cmp	r4, #4
+ 156 0044 F0DD     		ble	.L14
+ 157              	.L13:
+ 158              	.LBE4:
+  52:serial.c      ****     return 1; //true
+ 159              		.loc 1 52 0 is_stmt 1
+ 160 0046 0022     		movs	r2, #0
+ 161 0048 034B     		ldr	r3, .L17+8
+ 162 004a 5A60     		str	r2, [r3, #4]
+  53:serial.c      **** }
+ 163              		.loc 1 53 0
+ 164 004c 0120     		movs	r0, #1
+  54:serial.c      **** /* function to compare the input char* with the list of valid commands in cmd_str */
+ 165              		.loc 1 54 0
+ 166 004e 10BD     		pop	{r4, pc}
+ 167              	.LVL16:
+ 168              	.L18:
+ 169              		.align	2
+ 170              	.L17:
+ 171 0050 00000000 		.word	cmd_params
+ 172 0054 00000000 		.word	.LANCHOR2
+ 173 0058 00000000 		.word	.LANCHOR1
+ 174              		.cfi_endproc
+ 175              	.LFE64:
+ 176              		.size	serial_parseLine, .-serial_parseLine
+ 177              		.section	.text.serial_checkInput,"ax",%progbits
+ 178              		.align	2
+ 179              		.global	serial_checkInput
+ 180              		.thumb
+ 181              		.thumb_func
+ 182              		.type	serial_checkInput, %function
+ 183              	serial_checkInput:
+ 184              	.LFB66:
+  65:serial.c      **** 
+  66:serial.c      **** /* ========================================
+  67:serial.c      ****  * Operation: serial_checkInput
+  68:serial.c      ****  * Description: reads UART input and holds it inside a buffer until a delimiter is readed
+  69:serial.c      ****  * input: char* buffer - char array to store the serial input line
+  70:serial.c      ****  * output:
+  71:serial.c      ****  *      return true/false - return true after a input is complete (delimiter met)
+  72:serial.c      ****  *      char* buffer - the array is filled with the input line 
+  73:serial.c      ****  * ========================================
+  74:serial.c      **** */
+  75:serial.c      **** uint8_t serial_checkInput(char *buffer) {
+ 185              		.loc 1 75 0
+ 186              		.cfi_startproc
+ 187              		@ args = 0, pretend = 0, frame = 0
+ 188              		@ frame_needed = 0, uses_anonymous_args = 0
+ 189              	.LVL17:
+ 190 0000 10B5     		push	{r4, lr}
+ 191              		.cfi_def_cfa_offset 8
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 6
+
+
+ 192              		.cfi_offset 4, -8
+ 193              		.cfi_offset 14, -4
+ 194 0002 0446     		mov	r4, r0
+  76:serial.c      ****     uint8_t c;
+  77:serial.c      ****     static uint8_t i=0;
+  78:serial.c      ****     if(UART_GetRxBufferSize()){ //if UART input available
+ 195              		.loc 1 78 0
+ 196 0004 FFF7FEFF 		bl	UART_GetRxBufferSize
+ 197              	.LVL18:
+ 198 0008 0346     		mov	r3, r0
+ 199 000a 30B3     		cbz	r0, .L20
+  79:serial.c      ****         c = UART_GetByte(); //Read 1 char first
+ 200              		.loc 1 79 0
+ 201 000c FFF7FEFF 		bl	UART_GetByte
+ 202              	.LVL19:
+ 203 0010 C0B2     		uxtb	r0, r0
+ 204              	.LVL20:
+  80:serial.c      ****         //UART_PutChar(c); //echo the char
+  81:serial.c      ****         if(c=='\b'){//if backspace
+ 205              		.loc 1 81 0
+ 206 0012 0828     		cmp	r0, #8
+ 207 0014 07D1     		bne	.L21
+  82:serial.c      ****             buffer[i] = ' ';
+ 208              		.loc 1 82 0
+ 209 0016 124A     		ldr	r2, .L26
+ 210 0018 137A     		ldrb	r3, [r2, #8]	@ zero_extendqisi2
+ 211 001a 2021     		movs	r1, #32
+ 212 001c E154     		strb	r1, [r4, r3]
+  83:serial.c      ****             i--;
+ 213              		.loc 1 83 0
+ 214 001e 013B     		subs	r3, r3, #1
+ 215 0020 1372     		strb	r3, [r2, #8]
+  84:serial.c      ****             return 0;
+ 216              		.loc 1 84 0
+ 217 0022 0023     		movs	r3, #0
+ 218 0024 19E0     		b	.L20
+ 219              	.L21:
+  85:serial.c      ****         } else if(c=='\r' || c=='\n'){ //if found delimiter, input available
+ 220              		.loc 1 85 0
+ 221 0026 0D28     		cmp	r0, #13
+ 222 0028 01D0     		beq	.L22
+ 223              		.loc 1 85 0 is_stmt 0 discriminator 1
+ 224 002a 0A28     		cmp	r0, #10
+ 225 002c 07D1     		bne	.L23
+ 226              	.L22:
+  86:serial.c      ****             i =0;
+ 227              		.loc 1 86 0 is_stmt 1
+ 228 002e 0022     		movs	r2, #0
+ 229 0030 0B4B     		ldr	r3, .L26
+ 230 0032 1A72     		strb	r2, [r3, #8]
+  87:serial.c      ****             UART_PutString("\r\n");
+ 231              		.loc 1 87 0
+ 232 0034 0B48     		ldr	r0, .L26+4
+ 233              	.LVL21:
+ 234 0036 FFF7FEFF 		bl	UART_PutString
+ 235              	.LVL22:
+  88:serial.c      ****             return 1;
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 7
+
+
+ 236              		.loc 1 88 0
+ 237 003a 0123     		movs	r3, #1
+ 238 003c 0DE0     		b	.L20
+ 239              	.LVL23:
+ 240              	.L23:
+  89:serial.c      ****         } else if(i >= RX_BUFFER_SIZE){ //if maximum output, input available
+ 241              		.loc 1 89 0
+ 242 003e 084B     		ldr	r3, .L26
+ 243 0040 1B7A     		ldrb	r3, [r3, #8]	@ zero_extendqisi2
+ 244 0042 1F2B     		cmp	r3, #31
+ 245 0044 04D9     		bls	.L24
+  90:serial.c      ****             i = 0;
+ 246              		.loc 1 90 0
+ 247 0046 0022     		movs	r2, #0
+ 248 0048 054B     		ldr	r3, .L26
+ 249 004a 1A72     		strb	r2, [r3, #8]
+  91:serial.c      ****             return 1;
+ 250              		.loc 1 91 0
+ 251 004c 0123     		movs	r3, #1
+ 252 004e 04E0     		b	.L20
+ 253              	.L24:
+  92:serial.c      ****         } else{ //if no delimiter, hold input
+  93:serial.c      ****             buffer[i] = c;
+ 254              		.loc 1 93 0
+ 255 0050 E054     		strb	r0, [r4, r3]
+  94:serial.c      ****             i++;
+ 256              		.loc 1 94 0
+ 257 0052 0133     		adds	r3, r3, #1
+ 258 0054 024A     		ldr	r2, .L26
+ 259 0056 1372     		strb	r3, [r2, #8]
+  95:serial.c      ****             return 0;
+ 260              		.loc 1 95 0
+ 261 0058 0023     		movs	r3, #0
+ 262              	.LVL24:
+ 263              	.L20:
+  96:serial.c      ****         }
+  97:serial.c      ****     }
+  98:serial.c      ****     return 0;
+  99:serial.c      **** }
+ 264              		.loc 1 99 0
+ 265 005a 1846     		mov	r0, r3
+ 266 005c 10BD     		pop	{r4, pc}
+ 267              	.LVL25:
+ 268              	.L27:
+ 269 005e 00BF     		.align	2
+ 270              	.L26:
+ 271 0060 00000000 		.word	.LANCHOR1
+ 272 0064 00000000 		.word	.LC0
+ 273              		.cfi_endproc
+ 274              	.LFE66:
+ 275              		.size	serial_checkInput, .-serial_checkInput
+ 276              		.global	cmd_separators
+ 277              		.global	cmd_end
+ 278              		.global	cmd_error
+ 279              		.global	cmd_nparam
+ 280              		.comm	cmd_params,20,4
+ 281              		.global	cmd_last
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 8
+
+
+ 282              		.global	cmd
+ 283              		.global	cmd_str
+ 284              		.section	.rodata
+ 285              		.align	2
+ 286              		.set	.LANCHOR2,. + 0
+ 287              		.type	cmd_separators, %object
+ 288              		.size	cmd_separators, 5
+ 289              	cmd_separators:
+ 290 0000 202C3B3D 		.ascii	" ,;=\000"
+ 290      00
+ 291              		.type	cmd_end, %object
+ 292              		.size	cmd_end, 1
+ 293              	cmd_end:
+ 294 0005 0D       		.byte	13
+ 295              		.data
+ 296              		.align	2
+ 297              		.set	.LANCHOR0,. + 0
+ 298              		.type	cmd_str, %object
+ 299              		.size	cmd_str, 32
+ 300              	cmd_str:
+ 301 0000 04000000 		.word	.LC1
+ 302 0004 08000000 		.word	.LC2
+ 303 0008 0C000000 		.word	.LC3
+ 304 000c 10000000 		.word	.LC4
+ 305 0010 14000000 		.word	.LC5
+ 306 0014 18000000 		.word	.LC6
+ 307 0018 1C000000 		.word	.LC7
+ 308 001c 24000000 		.word	.LC8
+ 309              		.section	.rodata.str1.4,"aMS",%progbits,1
+ 310              		.align	2
+ 311              	.LC0:
+ 312 0000 0D0A00   		.ascii	"\015\012\000"
+ 313 0003 00       		.space	1
+ 314              	.LC1:
+ 315 0004 00       		.ascii	"\000"
+ 316 0005 000000   		.space	3
+ 317              	.LC2:
+ 318 0008 5300     		.ascii	"S\000"
+ 319 000a 0000     		.space	2
+ 320              	.LC3:
+ 321 000c 4900     		.ascii	"I\000"
+ 322 000e 0000     		.space	2
+ 323              	.LC4:
+ 324 0010 435600   		.ascii	"CV\000"
+ 325 0013 00       		.space	1
+ 326              	.LC5:
+ 327 0014 4C535600 		.ascii	"LSV\000"
+ 328              	.LC6:
+ 329 0018 434100   		.ascii	"CA\000"
+ 330 001b 00       		.space	1
+ 331              	.LC7:
+ 332 001c 43414C49 		.ascii	"CALI\000"
+ 332      00
+ 333 0021 000000   		.space	3
+ 334              	.LC8:
+ 335 0024 524700   		.ascii	"RG\000"
+ 336              		.bss
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 9
+
+
+ 337              		.align	2
+ 338              		.set	.LANCHOR1,. + 0
+ 339              		.type	cmd, %object
+ 340              		.size	cmd, 4
+ 341              	cmd:
+ 342 0000 00000000 		.space	4
+ 343              		.type	cmd_error, %object
+ 344              		.size	cmd_error, 4
+ 345              	cmd_error:
+ 346 0004 00000000 		.space	4
+ 347              		.type	i.7318, %object
+ 348              		.size	i.7318, 1
+ 349              	i.7318:
+ 350 0008 00       		.space	1
+ 351 0009 000000   		.space	3
+ 352              		.type	cmd_nparam, %object
+ 353              		.size	cmd_nparam, 4
+ 354              	cmd_nparam:
+ 355 000c 00000000 		.space	4
+ 356              		.type	cmd_last, %object
+ 357              		.size	cmd_last, 4
+ 358              	cmd_last:
+ 359 0010 00000000 		.space	4
+ 360              		.text
+ 361              	.Letext0:
+ 362              		.file 2 "d:\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.1\\arm-none-eabi\\inc
+ 363              		.file 3 "d:\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.1\\arm-none-eabi\\inc
+ 364              		.file 4 "Generated_Source\\PSoC5/core_cm3.h"
+ 365              		.file 5 "d:\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.1\\arm-none-eabi\\inc
+ 366              		.file 6 "d:\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.1\\arm-none-eabi\\inc
+ 367              		.file 7 "Generated_Source\\PSoC5/UART.h"
+ 368              		.file 8 "serial.h"
+ 369              		.section	.debug_info,"",%progbits
+ 370              	.Ldebug_info0:
+ 371 0000 72030000 		.4byte	0x372
+ 372 0004 0400     		.2byte	0x4
+ 373 0006 00000000 		.4byte	.Ldebug_abbrev0
+ 374 000a 04       		.byte	0x4
+ 375 000b 01       		.uleb128 0x1
+ 376 000c CB000000 		.4byte	.LASF45
+ 377 0010 0C       		.byte	0xc
+ 378 0011 B4000000 		.4byte	.LASF46
+ 379 0015 00000000 		.4byte	.LASF47
+ 380 0019 18000000 		.4byte	.Ldebug_ranges0+0x18
+ 381 001d 00000000 		.4byte	0
+ 382 0021 00000000 		.4byte	.Ldebug_line0
+ 383 0025 02       		.uleb128 0x2
+ 384 0026 01       		.byte	0x1
+ 385 0027 06       		.byte	0x6
+ 386 0028 9F020000 		.4byte	.LASF0
+ 387 002c 03       		.uleb128 0x3
+ 388 002d 48000000 		.4byte	.LASF4
+ 389 0031 02       		.byte	0x2
+ 390 0032 1D       		.byte	0x1d
+ 391 0033 37000000 		.4byte	0x37
+ 392 0037 02       		.uleb128 0x2
+ 393 0038 01       		.byte	0x1
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 10
+
+
+ 394 0039 08       		.byte	0x8
+ 395 003a BD000000 		.4byte	.LASF1
+ 396 003e 02       		.uleb128 0x2
+ 397 003f 02       		.byte	0x2
+ 398 0040 05       		.byte	0x5
+ 399 0041 62020000 		.4byte	.LASF2
+ 400 0045 02       		.uleb128 0x2
+ 401 0046 02       		.byte	0x2
+ 402 0047 07       		.byte	0x7
+ 403 0048 70010000 		.4byte	.LASF3
+ 404 004c 03       		.uleb128 0x3
+ 405 004d 57000000 		.4byte	.LASF5
+ 406 0051 02       		.byte	0x2
+ 407 0052 3F       		.byte	0x3f
+ 408 0053 57000000 		.4byte	0x57
+ 409 0057 02       		.uleb128 0x2
+ 410 0058 04       		.byte	0x4
+ 411 0059 05       		.byte	0x5
+ 412 005a 61000000 		.4byte	.LASF6
+ 413 005e 02       		.uleb128 0x2
+ 414 005f 04       		.byte	0x4
+ 415 0060 07       		.byte	0x7
+ 416 0061 5E010000 		.4byte	.LASF7
+ 417 0065 02       		.uleb128 0x2
+ 418 0066 08       		.byte	0x8
+ 419 0067 05       		.byte	0x5
+ 420 0068 34020000 		.4byte	.LASF8
+ 421 006c 02       		.uleb128 0x2
+ 422 006d 08       		.byte	0x8
+ 423 006e 07       		.byte	0x7
+ 424 006f 9D000000 		.4byte	.LASF9
+ 425 0073 04       		.uleb128 0x4
+ 426 0074 04       		.byte	0x4
+ 427 0075 05       		.byte	0x5
+ 428 0076 696E7400 		.ascii	"int\000"
+ 429 007a 02       		.uleb128 0x2
+ 430 007b 04       		.byte	0x4
+ 431 007c 07       		.byte	0x7
+ 432 007d DC010000 		.4byte	.LASF10
+ 433 0081 02       		.uleb128 0x2
+ 434 0082 08       		.byte	0x8
+ 435 0083 04       		.byte	0x4
+ 436 0084 93020000 		.4byte	.LASF11
+ 437 0088 02       		.uleb128 0x2
+ 438 0089 04       		.byte	0x4
+ 439 008a 07       		.byte	0x7
+ 440 008b 2B020000 		.4byte	.LASF12
+ 441 008f 05       		.uleb128 0x5
+ 442 0090 04       		.byte	0x4
+ 443 0091 95000000 		.4byte	0x95
+ 444 0095 02       		.uleb128 0x2
+ 445 0096 01       		.byte	0x1
+ 446 0097 08       		.byte	0x8
+ 447 0098 8E020000 		.4byte	.LASF13
+ 448 009c 05       		.uleb128 0x5
+ 449 009d 04       		.byte	0x4
+ 450 009e A2000000 		.4byte	0xa2
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 11
+
+
+ 451 00a2 06       		.uleb128 0x6
+ 452 00a3 95000000 		.4byte	0x95
+ 453 00a7 03       		.uleb128 0x3
+ 454 00a8 F6010000 		.4byte	.LASF14
+ 455 00ac 03       		.byte	0x3
+ 456 00ad 18       		.byte	0x18
+ 457 00ae 2C000000 		.4byte	0x2c
+ 458 00b2 03       		.uleb128 0x3
+ 459 00b3 12020000 		.4byte	.LASF15
+ 460 00b7 03       		.byte	0x3
+ 461 00b8 2C       		.byte	0x2c
+ 462 00b9 4C000000 		.4byte	0x4c
+ 463 00bd 02       		.uleb128 0x2
+ 464 00be 04       		.byte	0x4
+ 465 00bf 04       		.byte	0x4
+ 466 00c0 90000000 		.4byte	.LASF16
+ 467 00c4 02       		.uleb128 0x2
+ 468 00c5 08       		.byte	0x8
+ 469 00c6 04       		.byte	0x4
+ 470 00c7 74000000 		.4byte	.LASF17
+ 471 00cb 07       		.uleb128 0x7
+ 472 00cc 92010000 		.4byte	.LASF48
+ 473 00d0 01       		.byte	0x1
+ 474 00d1 37000000 		.4byte	0x37
+ 475 00d5 08       		.byte	0x8
+ 476 00d6 0B       		.byte	0xb
+ 477 00d7 10010000 		.4byte	0x110
+ 478 00db 08       		.uleb128 0x8
+ 479 00dc 52000000 		.4byte	.LASF18
+ 480 00e0 00       		.byte	0
+ 481 00e1 08       		.uleb128 0x8
+ 482 00e2 CA010000 		.4byte	.LASF19
+ 483 00e6 01       		.byte	0x1
+ 484 00e7 08       		.uleb128 0x8
+ 485 00e8 FE010000 		.4byte	.LASF20
+ 486 00ec 02       		.byte	0x2
+ 487 00ed 09       		.uleb128 0x9
+ 488 00ee 435600   		.ascii	"CV\000"
+ 489 00f1 03       		.byte	0x3
+ 490 00f2 09       		.uleb128 0x9
+ 491 00f3 4C535600 		.ascii	"LSV\000"
+ 492 00f7 04       		.byte	0x4
+ 493 00f8 09       		.uleb128 0x9
+ 494 00f9 434100   		.ascii	"CA\000"
+ 495 00fc 05       		.byte	0x5
+ 496 00fd 08       		.uleb128 0x8
+ 497 00fe 86000000 		.4byte	.LASF21
+ 498 0102 06       		.byte	0x6
+ 499 0103 08       		.uleb128 0x8
+ 500 0104 42020000 		.4byte	.LASF22
+ 501 0108 07       		.byte	0x7
+ 502 0109 08       		.uleb128 0x8
+ 503 010a C2020000 		.4byte	.LASF23
+ 504 010e 08       		.byte	0x8
+ 505 010f 00       		.byte	0
+ 506 0110 0A       		.uleb128 0xa
+ 507 0111 B6010000 		.4byte	.LASF24
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 12
+
+
+ 508 0115 01       		.byte	0x1
+ 509 0116 38       		.byte	0x38
+ 510 0117 73000000 		.4byte	0x73
+ 511 011b 00000000 		.4byte	.LFB65
+ 512 011f 30000000 		.4byte	.LFE65-.LFB65
+ 513 0123 01       		.uleb128 0x1
+ 514 0124 9C       		.byte	0x9c
+ 515 0125 60010000 		.4byte	0x160
+ 516 0129 0B       		.uleb128 0xb
+ 517 012a B1010000 		.4byte	.LASF26
+ 518 012e 01       		.byte	0x1
+ 519 012f 38       		.byte	0x38
+ 520 0130 8F000000 		.4byte	0x8f
+ 521 0134 00000000 		.4byte	.LLST0
+ 522 0138 0C       		.uleb128 0xc
+ 523 0139 04000000 		.4byte	.LBB2
+ 524 013d 20000000 		.4byte	.LBE2-.LBB2
+ 525 0141 0D       		.uleb128 0xd
+ 526 0142 6900     		.ascii	"i\000"
+ 527 0144 01       		.byte	0x1
+ 528 0145 39       		.byte	0x39
+ 529 0146 73000000 		.4byte	0x73
+ 530 014a 2C000000 		.4byte	.LLST1
+ 531 014e 0E       		.uleb128 0xe
+ 532 014f 14000000 		.4byte	.LVL3
+ 533 0153 33030000 		.4byte	0x333
+ 534 0157 0F       		.uleb128 0xf
+ 535 0158 01       		.uleb128 0x1
+ 536 0159 50       		.byte	0x50
+ 537 015a 02       		.uleb128 0x2
+ 538 015b 75       		.byte	0x75
+ 539 015c 00       		.sleb128 0
+ 540 015d 00       		.byte	0
+ 541 015e 00       		.byte	0
+ 542 015f 00       		.byte	0
+ 543 0160 0A       		.uleb128 0xa
+ 544 0161 1A020000 		.4byte	.LASF25
+ 545 0165 01       		.byte	0x1
+ 546 0166 22       		.byte	0x22
+ 547 0167 A7000000 		.4byte	0xa7
+ 548 016b 00000000 		.4byte	.LFB64
+ 549 016f 5C000000 		.4byte	.LFE64-.LFB64
+ 550 0173 01       		.uleb128 0x1
+ 551 0174 9C       		.byte	0x9c
+ 552 0175 FB010000 		.4byte	0x1fb
+ 553 0179 0B       		.uleb128 0xb
+ 554 017a F0010000 		.4byte	.LASF27
+ 555 017e 01       		.byte	0x1
+ 556 017f 22       		.byte	0x22
+ 557 0180 8F000000 		.4byte	0x8f
+ 558 0184 4B000000 		.4byte	.LLST2
+ 559 0188 10       		.uleb128 0x10
+ 560 0189 88020000 		.4byte	.LASF28
+ 561 018d 01       		.byte	0x1
+ 562 018e 24       		.byte	0x24
+ 563 018f 8F000000 		.4byte	0x8f
+ 564 0193 6C000000 		.4byte	.LLST3
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 13
+
+
+ 565 0197 11       		.uleb128 0x11
+ 566 0198 00000000 		.4byte	.Ldebug_ranges0+0
+ 567 019c D3010000 		.4byte	0x1d3
+ 568 01a0 0D       		.uleb128 0xd
+ 569 01a1 6900     		.ascii	"i\000"
+ 570 01a3 01       		.byte	0x1
+ 571 01a4 2F       		.byte	0x2f
+ 572 01a5 73000000 		.4byte	0x73
+ 573 01a9 8A000000 		.4byte	.LLST4
+ 574 01ad 12       		.uleb128 0x12
+ 575 01ae 30000000 		.4byte	.LVL11
+ 576 01b2 3E030000 		.4byte	0x33e
+ 577 01b6 C9010000 		.4byte	0x1c9
+ 578 01ba 0F       		.uleb128 0xf
+ 579 01bb 01       		.uleb128 0x1
+ 580 01bc 50       		.byte	0x50
+ 581 01bd 01       		.uleb128 0x1
+ 582 01be 30       		.byte	0x30
+ 583 01bf 0F       		.uleb128 0xf
+ 584 01c0 01       		.uleb128 0x1
+ 585 01c1 51       		.byte	0x51
+ 586 01c2 05       		.uleb128 0x5
+ 587 01c3 03       		.byte	0x3
+ 588 01c4 00000000 		.4byte	.LANCHOR2
+ 589 01c8 00       		.byte	0
+ 590 01c9 13       		.uleb128 0x13
+ 591 01ca 36000000 		.4byte	.LVL12
+ 592 01ce 49030000 		.4byte	0x349
+ 593 01d2 00       		.byte	0
+ 594 01d3 12       		.uleb128 0x12
+ 595 01d4 10000000 		.4byte	.LVL8
+ 596 01d8 3E030000 		.4byte	0x33e
+ 597 01dc F1010000 		.4byte	0x1f1
+ 598 01e0 0F       		.uleb128 0xf
+ 599 01e1 01       		.uleb128 0x1
+ 600 01e2 50       		.byte	0x50
+ 601 01e3 03       		.uleb128 0x3
+ 602 01e4 F3       		.byte	0xf3
+ 603 01e5 01       		.uleb128 0x1
+ 604 01e6 50       		.byte	0x50
+ 605 01e7 0F       		.uleb128 0xf
+ 606 01e8 01       		.uleb128 0x1
+ 607 01e9 51       		.byte	0x51
+ 608 01ea 05       		.uleb128 0x5
+ 609 01eb 03       		.byte	0x3
+ 610 01ec 00000000 		.4byte	.LANCHOR2
+ 611 01f0 00       		.byte	0
+ 612 01f1 13       		.uleb128 0x13
+ 613 01f2 1E000000 		.4byte	.LVL9
+ 614 01f6 10010000 		.4byte	0x110
+ 615 01fa 00       		.byte	0
+ 616 01fb 0A       		.uleb128 0xa
+ 617 01fc 48020000 		.4byte	.LASF29
+ 618 0200 01       		.byte	0x1
+ 619 0201 4B       		.byte	0x4b
+ 620 0202 A7000000 		.4byte	0xa7
+ 621 0206 00000000 		.4byte	.LFB66
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 14
+
+
+ 622 020a 68000000 		.4byte	.LFE66-.LFB66
+ 623 020e 01       		.uleb128 0x1
+ 624 020f 9C       		.byte	0x9c
+ 625 0210 65020000 		.4byte	0x265
+ 626 0214 0B       		.uleb128 0xb
+ 627 0215 6C020000 		.4byte	.LASF30
+ 628 0219 01       		.byte	0x1
+ 629 021a 4B       		.byte	0x4b
+ 630 021b 8F000000 		.4byte	0x8f
+ 631 021f A8000000 		.4byte	.LLST5
+ 632 0223 0D       		.uleb128 0xd
+ 633 0224 6300     		.ascii	"c\000"
+ 634 0226 01       		.byte	0x1
+ 635 0227 4C       		.byte	0x4c
+ 636 0228 A7000000 		.4byte	0xa7
+ 637 022c D4000000 		.4byte	.LLST6
+ 638 0230 14       		.uleb128 0x14
+ 639 0231 6900     		.ascii	"i\000"
+ 640 0233 01       		.byte	0x1
+ 641 0234 4D       		.byte	0x4d
+ 642 0235 A7000000 		.4byte	0xa7
+ 643 0239 05       		.uleb128 0x5
+ 644 023a 03       		.byte	0x3
+ 645 023b 08000000 		.4byte	i.7318
+ 646 023f 13       		.uleb128 0x13
+ 647 0240 08000000 		.4byte	.LVL18
+ 648 0244 54030000 		.4byte	0x354
+ 649 0248 13       		.uleb128 0x13
+ 650 0249 10000000 		.4byte	.LVL19
+ 651 024d 5F030000 		.4byte	0x35f
+ 652 0251 0E       		.uleb128 0xe
+ 653 0252 3A000000 		.4byte	.LVL22
+ 654 0256 6A030000 		.4byte	0x36a
+ 655 025a 0F       		.uleb128 0xf
+ 656 025b 01       		.uleb128 0x1
+ 657 025c 50       		.byte	0x50
+ 658 025d 05       		.uleb128 0x5
+ 659 025e 03       		.byte	0x3
+ 660 025f 00000000 		.4byte	.LC0
+ 661 0263 00       		.byte	0
+ 662 0264 00       		.byte	0
+ 663 0265 15       		.uleb128 0x15
+ 664 0266 A4010000 		.4byte	.LASF31
+ 665 026a 04       		.byte	0x4
+ 666 026b 1207     		.2byte	0x712
+ 667 026d 71020000 		.4byte	0x271
+ 668 0271 16       		.uleb128 0x16
+ 669 0272 B2000000 		.4byte	0xb2
+ 670 0276 17       		.uleb128 0x17
+ 671 0277 636D6400 		.ascii	"cmd\000"
+ 672 027b 01       		.byte	0x1
+ 673 027c 0E       		.byte	0xe
+ 674 027d 73000000 		.4byte	0x73
+ 675 0281 05       		.uleb128 0x5
+ 676 0282 03       		.byte	0x3
+ 677 0283 00000000 		.4byte	cmd
+ 678 0287 18       		.uleb128 0x18
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 15
+
+
+ 679 0288 9B010000 		.4byte	.LASF32
+ 680 028c 01       		.byte	0x1
+ 681 028d 0F       		.byte	0xf
+ 682 028e 73000000 		.4byte	0x73
+ 683 0292 05       		.uleb128 0x5
+ 684 0293 03       		.byte	0x3
+ 685 0294 00000000 		.4byte	cmd_last
+ 686 0298 19       		.uleb128 0x19
+ 687 0299 73000000 		.4byte	0x73
+ 688 029d A8020000 		.4byte	0x2a8
+ 689 02a1 1A       		.uleb128 0x1a
+ 690 02a2 88000000 		.4byte	0x88
+ 691 02a6 04       		.byte	0x4
+ 692 02a7 00       		.byte	0
+ 693 02a8 18       		.uleb128 0x18
+ 694 02a9 07020000 		.4byte	.LASF33
+ 695 02ad 01       		.byte	0x1
+ 696 02ae 10       		.byte	0x10
+ 697 02af 98020000 		.4byte	0x298
+ 698 02b3 05       		.uleb128 0x5
+ 699 02b4 03       		.byte	0x3
+ 700 02b5 00000000 		.4byte	cmd_params
+ 701 02b9 18       		.uleb128 0x18
+ 702 02ba 7B000000 		.4byte	.LASF34
+ 703 02be 01       		.byte	0x1
+ 704 02bf 11       		.byte	0x11
+ 705 02c0 73000000 		.4byte	0x73
+ 706 02c4 05       		.uleb128 0x5
+ 707 02c5 03       		.byte	0x3
+ 708 02c6 00000000 		.4byte	cmd_nparam
+ 709 02ca 18       		.uleb128 0x18
+ 710 02cb 6A000000 		.4byte	.LASF35
+ 711 02cf 01       		.byte	0x1
+ 712 02d0 12       		.byte	0x12
+ 713 02d1 73000000 		.4byte	0x73
+ 714 02d5 05       		.uleb128 0x5
+ 715 02d6 03       		.byte	0x3
+ 716 02d7 00000000 		.4byte	cmd_error
+ 717 02db 19       		.uleb128 0x19
+ 718 02dc 9C000000 		.4byte	0x9c
+ 719 02e0 EB020000 		.4byte	0x2eb
+ 720 02e4 1A       		.uleb128 0x1a
+ 721 02e5 88000000 		.4byte	0x88
+ 722 02e9 07       		.byte	0x7
+ 723 02ea 00       		.byte	0
+ 724 02eb 18       		.uleb128 0x18
+ 725 02ec AB020000 		.4byte	.LASF36
+ 726 02f0 01       		.byte	0x1
+ 727 02f1 0A       		.byte	0xa
+ 728 02f2 DB020000 		.4byte	0x2db
+ 729 02f6 05       		.uleb128 0x5
+ 730 02f7 03       		.byte	0x3
+ 731 02f8 00000000 		.4byte	cmd_str
+ 732 02fc 18       		.uleb128 0x18
+ 733 02fd 5A020000 		.4byte	.LASF37
+ 734 0301 01       		.byte	0x1
+ 735 0302 14       		.byte	0x14
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 16
+
+
+ 736 0303 A2000000 		.4byte	0xa2
+ 737 0307 05       		.uleb128 0x5
+ 738 0308 03       		.byte	0x3
+ 739 0309 00000000 		.4byte	cmd_end
+ 740 030d 19       		.uleb128 0x19
+ 741 030e A2000000 		.4byte	0xa2
+ 742 0312 1D030000 		.4byte	0x31d
+ 743 0316 1A       		.uleb128 0x1a
+ 744 0317 88000000 		.4byte	0x88
+ 745 031b 04       		.byte	0x4
+ 746 031c 00       		.byte	0
+ 747 031d 18       		.uleb128 0x18
+ 748 031e 83010000 		.4byte	.LASF38
+ 749 0322 01       		.byte	0x1
+ 750 0323 15       		.byte	0x15
+ 751 0324 2E030000 		.4byte	0x32e
+ 752 0328 05       		.uleb128 0x5
+ 753 0329 03       		.byte	0x3
+ 754 032a 00000000 		.4byte	cmd_separators
+ 755 032e 06       		.uleb128 0x6
+ 756 032f 0D030000 		.4byte	0x30d
+ 757 0333 1B       		.uleb128 0x1b
+ 758 0334 96000000 		.4byte	.LASF39
+ 759 0338 96000000 		.4byte	.LASF39
+ 760 033c 05       		.byte	0x5
+ 761 033d 1C       		.byte	0x1c
+ 762 033e 1B       		.uleb128 0x1b
+ 763 033f E9010000 		.4byte	.LASF40
+ 764 0343 E9010000 		.4byte	.LASF40
+ 765 0347 05       		.byte	0x5
+ 766 0348 2A       		.byte	0x2a
+ 767 0349 1B       		.uleb128 0x1b
+ 768 034a 59010000 		.4byte	.LASF41
+ 769 034e 59010000 		.4byte	.LASF41
+ 770 0352 06       		.byte	0x6
+ 771 0353 4F       		.byte	0x4f
+ 772 0354 1B       		.uleb128 0x1b
+ 773 0355 73020000 		.4byte	.LASF42
+ 774 0359 73020000 		.4byte	.LASF42
+ 775 035d 07       		.byte	0x7
+ 776 035e 73       		.byte	0x73
+ 777 035f 1B       		.uleb128 0x1b
+ 778 0360 CF010000 		.4byte	.LASF43
+ 779 0364 CF010000 		.4byte	.LASF43
+ 780 0368 07       		.byte	0x7
+ 781 0369 72       		.byte	0x72
+ 782 036a 1B       		.uleb128 0x1b
+ 783 036b B3020000 		.4byte	.LASF44
+ 784 036f B3020000 		.4byte	.LASF44
+ 785 0373 07       		.byte	0x7
+ 786 0374 8B       		.byte	0x8b
+ 787 0375 00       		.byte	0
+ 788              		.section	.debug_abbrev,"",%progbits
+ 789              	.Ldebug_abbrev0:
+ 790 0000 01       		.uleb128 0x1
+ 791 0001 11       		.uleb128 0x11
+ 792 0002 01       		.byte	0x1
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 17
+
+
+ 793 0003 25       		.uleb128 0x25
+ 794 0004 0E       		.uleb128 0xe
+ 795 0005 13       		.uleb128 0x13
+ 796 0006 0B       		.uleb128 0xb
+ 797 0007 03       		.uleb128 0x3
+ 798 0008 0E       		.uleb128 0xe
+ 799 0009 1B       		.uleb128 0x1b
+ 800 000a 0E       		.uleb128 0xe
+ 801 000b 55       		.uleb128 0x55
+ 802 000c 17       		.uleb128 0x17
+ 803 000d 11       		.uleb128 0x11
+ 804 000e 01       		.uleb128 0x1
+ 805 000f 10       		.uleb128 0x10
+ 806 0010 17       		.uleb128 0x17
+ 807 0011 00       		.byte	0
+ 808 0012 00       		.byte	0
+ 809 0013 02       		.uleb128 0x2
+ 810 0014 24       		.uleb128 0x24
+ 811 0015 00       		.byte	0
+ 812 0016 0B       		.uleb128 0xb
+ 813 0017 0B       		.uleb128 0xb
+ 814 0018 3E       		.uleb128 0x3e
+ 815 0019 0B       		.uleb128 0xb
+ 816 001a 03       		.uleb128 0x3
+ 817 001b 0E       		.uleb128 0xe
+ 818 001c 00       		.byte	0
+ 819 001d 00       		.byte	0
+ 820 001e 03       		.uleb128 0x3
+ 821 001f 16       		.uleb128 0x16
+ 822 0020 00       		.byte	0
+ 823 0021 03       		.uleb128 0x3
+ 824 0022 0E       		.uleb128 0xe
+ 825 0023 3A       		.uleb128 0x3a
+ 826 0024 0B       		.uleb128 0xb
+ 827 0025 3B       		.uleb128 0x3b
+ 828 0026 0B       		.uleb128 0xb
+ 829 0027 49       		.uleb128 0x49
+ 830 0028 13       		.uleb128 0x13
+ 831 0029 00       		.byte	0
+ 832 002a 00       		.byte	0
+ 833 002b 04       		.uleb128 0x4
+ 834 002c 24       		.uleb128 0x24
+ 835 002d 00       		.byte	0
+ 836 002e 0B       		.uleb128 0xb
+ 837 002f 0B       		.uleb128 0xb
+ 838 0030 3E       		.uleb128 0x3e
+ 839 0031 0B       		.uleb128 0xb
+ 840 0032 03       		.uleb128 0x3
+ 841 0033 08       		.uleb128 0x8
+ 842 0034 00       		.byte	0
+ 843 0035 00       		.byte	0
+ 844 0036 05       		.uleb128 0x5
+ 845 0037 0F       		.uleb128 0xf
+ 846 0038 00       		.byte	0
+ 847 0039 0B       		.uleb128 0xb
+ 848 003a 0B       		.uleb128 0xb
+ 849 003b 49       		.uleb128 0x49
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 18
+
+
+ 850 003c 13       		.uleb128 0x13
+ 851 003d 00       		.byte	0
+ 852 003e 00       		.byte	0
+ 853 003f 06       		.uleb128 0x6
+ 854 0040 26       		.uleb128 0x26
+ 855 0041 00       		.byte	0
+ 856 0042 49       		.uleb128 0x49
+ 857 0043 13       		.uleb128 0x13
+ 858 0044 00       		.byte	0
+ 859 0045 00       		.byte	0
+ 860 0046 07       		.uleb128 0x7
+ 861 0047 04       		.uleb128 0x4
+ 862 0048 01       		.byte	0x1
+ 863 0049 03       		.uleb128 0x3
+ 864 004a 0E       		.uleb128 0xe
+ 865 004b 0B       		.uleb128 0xb
+ 866 004c 0B       		.uleb128 0xb
+ 867 004d 49       		.uleb128 0x49
+ 868 004e 13       		.uleb128 0x13
+ 869 004f 3A       		.uleb128 0x3a
+ 870 0050 0B       		.uleb128 0xb
+ 871 0051 3B       		.uleb128 0x3b
+ 872 0052 0B       		.uleb128 0xb
+ 873 0053 01       		.uleb128 0x1
+ 874 0054 13       		.uleb128 0x13
+ 875 0055 00       		.byte	0
+ 876 0056 00       		.byte	0
+ 877 0057 08       		.uleb128 0x8
+ 878 0058 28       		.uleb128 0x28
+ 879 0059 00       		.byte	0
+ 880 005a 03       		.uleb128 0x3
+ 881 005b 0E       		.uleb128 0xe
+ 882 005c 1C       		.uleb128 0x1c
+ 883 005d 0B       		.uleb128 0xb
+ 884 005e 00       		.byte	0
+ 885 005f 00       		.byte	0
+ 886 0060 09       		.uleb128 0x9
+ 887 0061 28       		.uleb128 0x28
+ 888 0062 00       		.byte	0
+ 889 0063 03       		.uleb128 0x3
+ 890 0064 08       		.uleb128 0x8
+ 891 0065 1C       		.uleb128 0x1c
+ 892 0066 0B       		.uleb128 0xb
+ 893 0067 00       		.byte	0
+ 894 0068 00       		.byte	0
+ 895 0069 0A       		.uleb128 0xa
+ 896 006a 2E       		.uleb128 0x2e
+ 897 006b 01       		.byte	0x1
+ 898 006c 3F       		.uleb128 0x3f
+ 899 006d 19       		.uleb128 0x19
+ 900 006e 03       		.uleb128 0x3
+ 901 006f 0E       		.uleb128 0xe
+ 902 0070 3A       		.uleb128 0x3a
+ 903 0071 0B       		.uleb128 0xb
+ 904 0072 3B       		.uleb128 0x3b
+ 905 0073 0B       		.uleb128 0xb
+ 906 0074 27       		.uleb128 0x27
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 19
+
+
+ 907 0075 19       		.uleb128 0x19
+ 908 0076 49       		.uleb128 0x49
+ 909 0077 13       		.uleb128 0x13
+ 910 0078 11       		.uleb128 0x11
+ 911 0079 01       		.uleb128 0x1
+ 912 007a 12       		.uleb128 0x12
+ 913 007b 06       		.uleb128 0x6
+ 914 007c 40       		.uleb128 0x40
+ 915 007d 18       		.uleb128 0x18
+ 916 007e 9742     		.uleb128 0x2117
+ 917 0080 19       		.uleb128 0x19
+ 918 0081 01       		.uleb128 0x1
+ 919 0082 13       		.uleb128 0x13
+ 920 0083 00       		.byte	0
+ 921 0084 00       		.byte	0
+ 922 0085 0B       		.uleb128 0xb
+ 923 0086 05       		.uleb128 0x5
+ 924 0087 00       		.byte	0
+ 925 0088 03       		.uleb128 0x3
+ 926 0089 0E       		.uleb128 0xe
+ 927 008a 3A       		.uleb128 0x3a
+ 928 008b 0B       		.uleb128 0xb
+ 929 008c 3B       		.uleb128 0x3b
+ 930 008d 0B       		.uleb128 0xb
+ 931 008e 49       		.uleb128 0x49
+ 932 008f 13       		.uleb128 0x13
+ 933 0090 02       		.uleb128 0x2
+ 934 0091 17       		.uleb128 0x17
+ 935 0092 00       		.byte	0
+ 936 0093 00       		.byte	0
+ 937 0094 0C       		.uleb128 0xc
+ 938 0095 0B       		.uleb128 0xb
+ 939 0096 01       		.byte	0x1
+ 940 0097 11       		.uleb128 0x11
+ 941 0098 01       		.uleb128 0x1
+ 942 0099 12       		.uleb128 0x12
+ 943 009a 06       		.uleb128 0x6
+ 944 009b 00       		.byte	0
+ 945 009c 00       		.byte	0
+ 946 009d 0D       		.uleb128 0xd
+ 947 009e 34       		.uleb128 0x34
+ 948 009f 00       		.byte	0
+ 949 00a0 03       		.uleb128 0x3
+ 950 00a1 08       		.uleb128 0x8
+ 951 00a2 3A       		.uleb128 0x3a
+ 952 00a3 0B       		.uleb128 0xb
+ 953 00a4 3B       		.uleb128 0x3b
+ 954 00a5 0B       		.uleb128 0xb
+ 955 00a6 49       		.uleb128 0x49
+ 956 00a7 13       		.uleb128 0x13
+ 957 00a8 02       		.uleb128 0x2
+ 958 00a9 17       		.uleb128 0x17
+ 959 00aa 00       		.byte	0
+ 960 00ab 00       		.byte	0
+ 961 00ac 0E       		.uleb128 0xe
+ 962 00ad 898201   		.uleb128 0x4109
+ 963 00b0 01       		.byte	0x1
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 20
+
+
+ 964 00b1 11       		.uleb128 0x11
+ 965 00b2 01       		.uleb128 0x1
+ 966 00b3 31       		.uleb128 0x31
+ 967 00b4 13       		.uleb128 0x13
+ 968 00b5 00       		.byte	0
+ 969 00b6 00       		.byte	0
+ 970 00b7 0F       		.uleb128 0xf
+ 971 00b8 8A8201   		.uleb128 0x410a
+ 972 00bb 00       		.byte	0
+ 973 00bc 02       		.uleb128 0x2
+ 974 00bd 18       		.uleb128 0x18
+ 975 00be 9142     		.uleb128 0x2111
+ 976 00c0 18       		.uleb128 0x18
+ 977 00c1 00       		.byte	0
+ 978 00c2 00       		.byte	0
+ 979 00c3 10       		.uleb128 0x10
+ 980 00c4 34       		.uleb128 0x34
+ 981 00c5 00       		.byte	0
+ 982 00c6 03       		.uleb128 0x3
+ 983 00c7 0E       		.uleb128 0xe
+ 984 00c8 3A       		.uleb128 0x3a
+ 985 00c9 0B       		.uleb128 0xb
+ 986 00ca 3B       		.uleb128 0x3b
+ 987 00cb 0B       		.uleb128 0xb
+ 988 00cc 49       		.uleb128 0x49
+ 989 00cd 13       		.uleb128 0x13
+ 990 00ce 02       		.uleb128 0x2
+ 991 00cf 17       		.uleb128 0x17
+ 992 00d0 00       		.byte	0
+ 993 00d1 00       		.byte	0
+ 994 00d2 11       		.uleb128 0x11
+ 995 00d3 0B       		.uleb128 0xb
+ 996 00d4 01       		.byte	0x1
+ 997 00d5 55       		.uleb128 0x55
+ 998 00d6 17       		.uleb128 0x17
+ 999 00d7 01       		.uleb128 0x1
+ 1000 00d8 13       		.uleb128 0x13
+ 1001 00d9 00       		.byte	0
+ 1002 00da 00       		.byte	0
+ 1003 00db 12       		.uleb128 0x12
+ 1004 00dc 898201   		.uleb128 0x4109
+ 1005 00df 01       		.byte	0x1
+ 1006 00e0 11       		.uleb128 0x11
+ 1007 00e1 01       		.uleb128 0x1
+ 1008 00e2 31       		.uleb128 0x31
+ 1009 00e3 13       		.uleb128 0x13
+ 1010 00e4 01       		.uleb128 0x1
+ 1011 00e5 13       		.uleb128 0x13
+ 1012 00e6 00       		.byte	0
+ 1013 00e7 00       		.byte	0
+ 1014 00e8 13       		.uleb128 0x13
+ 1015 00e9 898201   		.uleb128 0x4109
+ 1016 00ec 00       		.byte	0
+ 1017 00ed 11       		.uleb128 0x11
+ 1018 00ee 01       		.uleb128 0x1
+ 1019 00ef 31       		.uleb128 0x31
+ 1020 00f0 13       		.uleb128 0x13
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 21
+
+
+ 1021 00f1 00       		.byte	0
+ 1022 00f2 00       		.byte	0
+ 1023 00f3 14       		.uleb128 0x14
+ 1024 00f4 34       		.uleb128 0x34
+ 1025 00f5 00       		.byte	0
+ 1026 00f6 03       		.uleb128 0x3
+ 1027 00f7 08       		.uleb128 0x8
+ 1028 00f8 3A       		.uleb128 0x3a
+ 1029 00f9 0B       		.uleb128 0xb
+ 1030 00fa 3B       		.uleb128 0x3b
+ 1031 00fb 0B       		.uleb128 0xb
+ 1032 00fc 49       		.uleb128 0x49
+ 1033 00fd 13       		.uleb128 0x13
+ 1034 00fe 02       		.uleb128 0x2
+ 1035 00ff 18       		.uleb128 0x18
+ 1036 0100 00       		.byte	0
+ 1037 0101 00       		.byte	0
+ 1038 0102 15       		.uleb128 0x15
+ 1039 0103 34       		.uleb128 0x34
+ 1040 0104 00       		.byte	0
+ 1041 0105 03       		.uleb128 0x3
+ 1042 0106 0E       		.uleb128 0xe
+ 1043 0107 3A       		.uleb128 0x3a
+ 1044 0108 0B       		.uleb128 0xb
+ 1045 0109 3B       		.uleb128 0x3b
+ 1046 010a 05       		.uleb128 0x5
+ 1047 010b 49       		.uleb128 0x49
+ 1048 010c 13       		.uleb128 0x13
+ 1049 010d 3F       		.uleb128 0x3f
+ 1050 010e 19       		.uleb128 0x19
+ 1051 010f 3C       		.uleb128 0x3c
+ 1052 0110 19       		.uleb128 0x19
+ 1053 0111 00       		.byte	0
+ 1054 0112 00       		.byte	0
+ 1055 0113 16       		.uleb128 0x16
+ 1056 0114 35       		.uleb128 0x35
+ 1057 0115 00       		.byte	0
+ 1058 0116 49       		.uleb128 0x49
+ 1059 0117 13       		.uleb128 0x13
+ 1060 0118 00       		.byte	0
+ 1061 0119 00       		.byte	0
+ 1062 011a 17       		.uleb128 0x17
+ 1063 011b 34       		.uleb128 0x34
+ 1064 011c 00       		.byte	0
+ 1065 011d 03       		.uleb128 0x3
+ 1066 011e 08       		.uleb128 0x8
+ 1067 011f 3A       		.uleb128 0x3a
+ 1068 0120 0B       		.uleb128 0xb
+ 1069 0121 3B       		.uleb128 0x3b
+ 1070 0122 0B       		.uleb128 0xb
+ 1071 0123 49       		.uleb128 0x49
+ 1072 0124 13       		.uleb128 0x13
+ 1073 0125 3F       		.uleb128 0x3f
+ 1074 0126 19       		.uleb128 0x19
+ 1075 0127 02       		.uleb128 0x2
+ 1076 0128 18       		.uleb128 0x18
+ 1077 0129 00       		.byte	0
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 22
+
+
+ 1078 012a 00       		.byte	0
+ 1079 012b 18       		.uleb128 0x18
+ 1080 012c 34       		.uleb128 0x34
+ 1081 012d 00       		.byte	0
+ 1082 012e 03       		.uleb128 0x3
+ 1083 012f 0E       		.uleb128 0xe
+ 1084 0130 3A       		.uleb128 0x3a
+ 1085 0131 0B       		.uleb128 0xb
+ 1086 0132 3B       		.uleb128 0x3b
+ 1087 0133 0B       		.uleb128 0xb
+ 1088 0134 49       		.uleb128 0x49
+ 1089 0135 13       		.uleb128 0x13
+ 1090 0136 3F       		.uleb128 0x3f
+ 1091 0137 19       		.uleb128 0x19
+ 1092 0138 02       		.uleb128 0x2
+ 1093 0139 18       		.uleb128 0x18
+ 1094 013a 00       		.byte	0
+ 1095 013b 00       		.byte	0
+ 1096 013c 19       		.uleb128 0x19
+ 1097 013d 01       		.uleb128 0x1
+ 1098 013e 01       		.byte	0x1
+ 1099 013f 49       		.uleb128 0x49
+ 1100 0140 13       		.uleb128 0x13
+ 1101 0141 01       		.uleb128 0x1
+ 1102 0142 13       		.uleb128 0x13
+ 1103 0143 00       		.byte	0
+ 1104 0144 00       		.byte	0
+ 1105 0145 1A       		.uleb128 0x1a
+ 1106 0146 21       		.uleb128 0x21
+ 1107 0147 00       		.byte	0
+ 1108 0148 49       		.uleb128 0x49
+ 1109 0149 13       		.uleb128 0x13
+ 1110 014a 2F       		.uleb128 0x2f
+ 1111 014b 0B       		.uleb128 0xb
+ 1112 014c 00       		.byte	0
+ 1113 014d 00       		.byte	0
+ 1114 014e 1B       		.uleb128 0x1b
+ 1115 014f 2E       		.uleb128 0x2e
+ 1116 0150 00       		.byte	0
+ 1117 0151 3F       		.uleb128 0x3f
+ 1118 0152 19       		.uleb128 0x19
+ 1119 0153 3C       		.uleb128 0x3c
+ 1120 0154 19       		.uleb128 0x19
+ 1121 0155 6E       		.uleb128 0x6e
+ 1122 0156 0E       		.uleb128 0xe
+ 1123 0157 03       		.uleb128 0x3
+ 1124 0158 0E       		.uleb128 0xe
+ 1125 0159 3A       		.uleb128 0x3a
+ 1126 015a 0B       		.uleb128 0xb
+ 1127 015b 3B       		.uleb128 0x3b
+ 1128 015c 0B       		.uleb128 0xb
+ 1129 015d 00       		.byte	0
+ 1130 015e 00       		.byte	0
+ 1131 015f 00       		.byte	0
+ 1132              		.section	.debug_loc,"",%progbits
+ 1133              	.Ldebug_loc0:
+ 1134              	.LLST0:
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 23
+
+
+ 1135 0000 00000000 		.4byte	.LVL0
+ 1136 0004 08000000 		.4byte	.LVL2
+ 1137 0008 0100     		.2byte	0x1
+ 1138 000a 50       		.byte	0x50
+ 1139 000b 08000000 		.4byte	.LVL2
+ 1140 000f 28000000 		.4byte	.LVL6
+ 1141 0013 0100     		.2byte	0x1
+ 1142 0015 55       		.byte	0x55
+ 1143 0016 28000000 		.4byte	.LVL6
+ 1144 001a 30000000 		.4byte	.LFE65
+ 1145 001e 0400     		.2byte	0x4
+ 1146 0020 F3       		.byte	0xf3
+ 1147 0021 01       		.uleb128 0x1
+ 1148 0022 50       		.byte	0x50
+ 1149 0023 9F       		.byte	0x9f
+ 1150 0024 00000000 		.4byte	0
+ 1151 0028 00000000 		.4byte	0
+ 1152              	.LLST1:
+ 1153 002c 04000000 		.4byte	.LVL1
+ 1154 0030 08000000 		.4byte	.LVL2
+ 1155 0034 0200     		.2byte	0x2
+ 1156 0036 30       		.byte	0x30
+ 1157 0037 9F       		.byte	0x9f
+ 1158 0038 08000000 		.4byte	.LVL2
+ 1159 003c 28000000 		.4byte	.LVL6
+ 1160 0040 0100     		.2byte	0x1
+ 1161 0042 54       		.byte	0x54
+ 1162 0043 00000000 		.4byte	0
+ 1163 0047 00000000 		.4byte	0
+ 1164              	.LLST2:
+ 1165 004b 00000000 		.4byte	.LVL7
+ 1166 004f 0F000000 		.4byte	.LVL8-1
+ 1167 0053 0100     		.2byte	0x1
+ 1168 0055 50       		.byte	0x50
+ 1169 0056 0F000000 		.4byte	.LVL8-1
+ 1170 005a 5C000000 		.4byte	.LFE64
+ 1171 005e 0400     		.2byte	0x4
+ 1172 0060 F3       		.byte	0xf3
+ 1173 0061 01       		.uleb128 0x1
+ 1174 0062 50       		.byte	0x50
+ 1175 0063 9F       		.byte	0x9f
+ 1176 0064 00000000 		.4byte	0
+ 1177 0068 00000000 		.4byte	0
+ 1178              	.LLST3:
+ 1179 006c 10000000 		.4byte	.LVL8
+ 1180 0070 1D000000 		.4byte	.LVL9-1
+ 1181 0074 0100     		.2byte	0x1
+ 1182 0076 50       		.byte	0x50
+ 1183 0077 30000000 		.4byte	.LVL11
+ 1184 007b 35000000 		.4byte	.LVL12-1
+ 1185 007f 0100     		.2byte	0x1
+ 1186 0081 50       		.byte	0x50
+ 1187 0082 00000000 		.4byte	0
+ 1188 0086 00000000 		.4byte	0
+ 1189              	.LLST4:
+ 1190 008a 28000000 		.4byte	.LVL10
+ 1191 008e 40000000 		.4byte	.LVL14
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 24
+
+
+ 1192 0092 0100     		.2byte	0x1
+ 1193 0094 54       		.byte	0x54
+ 1194 0095 42000000 		.4byte	.LVL15
+ 1195 0099 50000000 		.4byte	.LVL16
+ 1196 009d 0100     		.2byte	0x1
+ 1197 009f 54       		.byte	0x54
+ 1198 00a0 00000000 		.4byte	0
+ 1199 00a4 00000000 		.4byte	0
+ 1200              	.LLST5:
+ 1201 00a8 00000000 		.4byte	.LVL17
+ 1202 00ac 07000000 		.4byte	.LVL18-1
+ 1203 00b0 0100     		.2byte	0x1
+ 1204 00b2 50       		.byte	0x50
+ 1205 00b3 07000000 		.4byte	.LVL18-1
+ 1206 00b7 5E000000 		.4byte	.LVL25
+ 1207 00bb 0100     		.2byte	0x1
+ 1208 00bd 54       		.byte	0x54
+ 1209 00be 5E000000 		.4byte	.LVL25
+ 1210 00c2 68000000 		.4byte	.LFE66
+ 1211 00c6 0400     		.2byte	0x4
+ 1212 00c8 F3       		.byte	0xf3
+ 1213 00c9 01       		.uleb128 0x1
+ 1214 00ca 50       		.byte	0x50
+ 1215 00cb 9F       		.byte	0x9f
+ 1216 00cc 00000000 		.4byte	0
+ 1217 00d0 00000000 		.4byte	0
+ 1218              	.LLST6:
+ 1219 00d4 12000000 		.4byte	.LVL20
+ 1220 00d8 36000000 		.4byte	.LVL21
+ 1221 00dc 0100     		.2byte	0x1
+ 1222 00de 50       		.byte	0x50
+ 1223 00df 3E000000 		.4byte	.LVL23
+ 1224 00e3 5A000000 		.4byte	.LVL24
+ 1225 00e7 0100     		.2byte	0x1
+ 1226 00e9 50       		.byte	0x50
+ 1227 00ea 00000000 		.4byte	0
+ 1228 00ee 00000000 		.4byte	0
+ 1229              		.section	.debug_aranges,"",%progbits
+ 1230 0000 2C000000 		.4byte	0x2c
+ 1231 0004 0200     		.2byte	0x2
+ 1232 0006 00000000 		.4byte	.Ldebug_info0
+ 1233 000a 04       		.byte	0x4
+ 1234 000b 00       		.byte	0
+ 1235 000c 0000     		.2byte	0
+ 1236 000e 0000     		.2byte	0
+ 1237 0010 00000000 		.4byte	.LFB65
+ 1238 0014 30000000 		.4byte	.LFE65-.LFB65
+ 1239 0018 00000000 		.4byte	.LFB64
+ 1240 001c 5C000000 		.4byte	.LFE64-.LFB64
+ 1241 0020 00000000 		.4byte	.LFB66
+ 1242 0024 68000000 		.4byte	.LFE66-.LFB66
+ 1243 0028 00000000 		.4byte	0
+ 1244 002c 00000000 		.4byte	0
+ 1245              		.section	.debug_ranges,"",%progbits
+ 1246              	.Ldebug_ranges0:
+ 1247 0000 28000000 		.4byte	.LBB3
+ 1248 0004 40000000 		.4byte	.LBE3
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 25
+
+
+ 1249 0008 42000000 		.4byte	.LBB4
+ 1250 000c 46000000 		.4byte	.LBE4
+ 1251 0010 00000000 		.4byte	0
+ 1252 0014 00000000 		.4byte	0
+ 1253 0018 00000000 		.4byte	.LFB65
+ 1254 001c 30000000 		.4byte	.LFE65
+ 1255 0020 00000000 		.4byte	.LFB64
+ 1256 0024 5C000000 		.4byte	.LFE64
+ 1257 0028 00000000 		.4byte	.LFB66
+ 1258 002c 68000000 		.4byte	.LFE66
+ 1259 0030 00000000 		.4byte	0
+ 1260 0034 00000000 		.4byte	0
+ 1261              		.section	.debug_line,"",%progbits
+ 1262              	.Ldebug_line0:
+ 1263 0000 17020000 		.section	.debug_str,"MS",%progbits,1
+ 1263      02009B01 
+ 1263      00000201 
+ 1263      FB0E0D00 
+ 1263      01010101 
+ 1264              	.LASF47:
+ 1265 0000 433A5C55 		.ascii	"C:\\Users\\Dias\\Documents\\PSoC Creator\\TA-Dias\\"
+ 1265      73657273 
+ 1265      5C446961 
+ 1265      735C446F 
+ 1265      63756D65 
+ 1266 002d 54412D44 		.ascii	"TA-DIas\\PSoC_Dias_v1.cydsn\000"
+ 1266      4961735C 
+ 1266      50536F43 
+ 1266      5F446961 
+ 1266      735F7631 
+ 1267              	.LASF4:
+ 1268 0048 5F5F7569 		.ascii	"__uint8_t\000"
+ 1268      6E74385F 
+ 1268      7400
+ 1269              	.LASF18:
+ 1270 0052 4E4F4E45 		.ascii	"NONE\000"
+ 1270      00
+ 1271              	.LASF5:
+ 1272 0057 5F5F696E 		.ascii	"__int32_t\000"
+ 1272      7433325F 
+ 1272      7400
+ 1273              	.LASF6:
+ 1274 0061 6C6F6E67 		.ascii	"long int\000"
+ 1274      20696E74 
+ 1274      00
+ 1275              	.LASF35:
+ 1276 006a 636D645F 		.ascii	"cmd_error\000"
+ 1276      6572726F 
+ 1276      7200
+ 1277              	.LASF17:
+ 1278 0074 646F7562 		.ascii	"double\000"
+ 1278      6C6500
+ 1279              	.LASF34:
+ 1280 007b 636D645F 		.ascii	"cmd_nparam\000"
+ 1280      6E706172 
+ 1280      616D00
+ 1281              	.LASF21:
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 26
+
+
+ 1282 0086 43414C49 		.ascii	"CALIBRATE\000"
+ 1282      42524154 
+ 1282      4500
+ 1283              	.LASF16:
+ 1284 0090 666C6F61 		.ascii	"float\000"
+ 1284      7400
+ 1285              	.LASF39:
+ 1286 0096 73747263 		.ascii	"strcmp\000"
+ 1286      6D7000
+ 1287              	.LASF9:
+ 1288 009d 6C6F6E67 		.ascii	"long long unsigned int\000"
+ 1288      206C6F6E 
+ 1288      6720756E 
+ 1288      7369676E 
+ 1288      65642069 
+ 1289              	.LASF46:
+ 1290 00b4 73657269 		.ascii	"serial.c\000"
+ 1290      616C2E63 
+ 1290      00
+ 1291              	.LASF1:
+ 1292 00bd 756E7369 		.ascii	"unsigned char\000"
+ 1292      676E6564 
+ 1292      20636861 
+ 1292      7200
+ 1293              	.LASF45:
+ 1294 00cb 474E5520 		.ascii	"GNU C11 5.4.1 20160609 (release) [ARM/embedded-5-br"
+ 1294      43313120 
+ 1294      352E342E 
+ 1294      31203230 
+ 1294      31363036 
+ 1295 00fe 616E6368 		.ascii	"anch revision 237715] -mcpu=cortex-m3 -mthumb -g -O"
+ 1295      20726576 
+ 1295      6973696F 
+ 1295      6E203233 
+ 1295      37373135 
+ 1296 0131 67202D66 		.ascii	"g -ffunction-sections -ffat-lto-objects\000"
+ 1296      66756E63 
+ 1296      74696F6E 
+ 1296      2D736563 
+ 1296      74696F6E 
+ 1297              	.LASF41:
+ 1298 0159 61746F6C 		.ascii	"atol\000"
+ 1298      00
+ 1299              	.LASF7:
+ 1300 015e 6C6F6E67 		.ascii	"long unsigned int\000"
+ 1300      20756E73 
+ 1300      69676E65 
+ 1300      6420696E 
+ 1300      7400
+ 1301              	.LASF3:
+ 1302 0170 73686F72 		.ascii	"short unsigned int\000"
+ 1302      7420756E 
+ 1302      7369676E 
+ 1302      65642069 
+ 1302      6E7400
+ 1303              	.LASF38:
+ 1304 0183 636D645F 		.ascii	"cmd_separators\000"
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 27
+
+
+ 1304      73657061 
+ 1304      7261746F 
+ 1304      727300
+ 1305              	.LASF48:
+ 1306 0192 65436F6D 		.ascii	"eCommand\000"
+ 1306      6D616E64 
+ 1306      00
+ 1307              	.LASF32:
+ 1308 019b 636D645F 		.ascii	"cmd_last\000"
+ 1308      6C617374 
+ 1308      00
+ 1309              	.LASF31:
+ 1310 01a4 49544D5F 		.ascii	"ITM_RxBuffer\000"
+ 1310      52784275 
+ 1310      66666572 
+ 1310      00
+ 1311              	.LASF26:
+ 1312 01b1 6C696E65 		.ascii	"line\000"
+ 1312      00
+ 1313              	.LASF24:
+ 1314 01b6 73657269 		.ascii	"serial_parseCommand\000"
+ 1314      616C5F70 
+ 1314      61727365 
+ 1314      436F6D6D 
+ 1314      616E6400 
+ 1315              	.LASF19:
+ 1316 01ca 53544F50 		.ascii	"STOP\000"
+ 1316      00
+ 1317              	.LASF43:
+ 1318 01cf 55415254 		.ascii	"UART_GetByte\000"
+ 1318      5F476574 
+ 1318      42797465 
+ 1318      00
+ 1319              	.LASF10:
+ 1320 01dc 756E7369 		.ascii	"unsigned int\000"
+ 1320      676E6564 
+ 1320      20696E74 
+ 1320      00
+ 1321              	.LASF40:
+ 1322 01e9 73747274 		.ascii	"strtok\000"
+ 1322      6F6B00
+ 1323              	.LASF27:
+ 1324 01f0 735F636D 		.ascii	"s_cmd\000"
+ 1324      6400
+ 1325              	.LASF14:
+ 1326 01f6 75696E74 		.ascii	"uint8_t\000"
+ 1326      385F7400 
+ 1327              	.LASF20:
+ 1328 01fe 4944454E 		.ascii	"IDENTIFY\000"
+ 1328      54494659 
+ 1328      00
+ 1329              	.LASF33:
+ 1330 0207 636D645F 		.ascii	"cmd_params\000"
+ 1330      70617261 
+ 1330      6D7300
+ 1331              	.LASF15:
+ 1332 0212 696E7433 		.ascii	"int32_t\000"
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 28
+
+
+ 1332      325F7400 
+ 1333              	.LASF25:
+ 1334 021a 73657269 		.ascii	"serial_parseLine\000"
+ 1334      616C5F70 
+ 1334      61727365 
+ 1334      4C696E65 
+ 1334      00
+ 1335              	.LASF12:
+ 1336 022b 73697A65 		.ascii	"sizetype\000"
+ 1336      74797065 
+ 1336      00
+ 1337              	.LASF8:
+ 1338 0234 6C6F6E67 		.ascii	"long long int\000"
+ 1338      206C6F6E 
+ 1338      6720696E 
+ 1338      7400
+ 1339              	.LASF22:
+ 1340 0242 52414E47 		.ascii	"RANGE\000"
+ 1340      4500
+ 1341              	.LASF29:
+ 1342 0248 73657269 		.ascii	"serial_checkInput\000"
+ 1342      616C5F63 
+ 1342      6865636B 
+ 1342      496E7075 
+ 1342      7400
+ 1343              	.LASF37:
+ 1344 025a 636D645F 		.ascii	"cmd_end\000"
+ 1344      656E6400 
+ 1345              	.LASF2:
+ 1346 0262 73686F72 		.ascii	"short int\000"
+ 1346      7420696E 
+ 1346      7400
+ 1347              	.LASF30:
+ 1348 026c 62756666 		.ascii	"buffer\000"
+ 1348      657200
+ 1349              	.LASF42:
+ 1350 0273 55415254 		.ascii	"UART_GetRxBufferSize\000"
+ 1350      5F476574 
+ 1350      52784275 
+ 1350      66666572 
+ 1350      53697A65 
+ 1351              	.LASF28:
+ 1352 0288 746F6B65 		.ascii	"token\000"
+ 1352      6E00
+ 1353              	.LASF13:
+ 1354 028e 63686172 		.ascii	"char\000"
+ 1354      00
+ 1355              	.LASF11:
+ 1356 0293 6C6F6E67 		.ascii	"long double\000"
+ 1356      20646F75 
+ 1356      626C6500 
+ 1357              	.LASF0:
+ 1358 029f 7369676E 		.ascii	"signed char\000"
+ 1358      65642063 
+ 1358      68617200 
+ 1359              	.LASF36:
+ 1360 02ab 636D645F 		.ascii	"cmd_str\000"
+ARM GAS  C:\Users\Dias\AppData\Local\Temp\cchyDp4f.s 			page 29
+
+
+ 1360      73747200 
+ 1361              	.LASF44:
+ 1362 02b3 55415254 		.ascii	"UART_PutString\000"
+ 1362      5F507574 
+ 1362      53747269 
+ 1362      6E6700
+ 1363              	.LASF23:
+ 1364 02c2 434D445F 		.ascii	"CMD_MAX\000"
+ 1364      4D415800 
+ 1365              		.ident	"GCC: (GNU Tools for ARM Embedded Processors) 5.4.1 20160609 (release) [ARM/embedded-5-bran
